@@ -1,0 +1,5 @@
+domains:
+  - domain: k3s.example.com
+    ip: external
+    password: cGFzc3dvcmQK
+    provider: namecheap
