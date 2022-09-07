@@ -19,10 +19,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func bypassReader(encoding string, input io.Reader) (io.Reader, error) {
-	return input, nil
-}
-
 func main() {
 	var configFile string
 	var version bool
@@ -69,12 +65,17 @@ func runE(configFile string) error {
 }
 
 type NamecheapResponse struct {
-	InterfaceResponse InterfaceResponse `xml:"interface-response"`
+	XMLName  xml.Name `xml:"interface-response"`
+	Text     string   `xml:",chardata"`
+	ErrCount int      `xml:"ErrCount"`
+	Errors   struct {
+		Text string `xml:",chardata"`
+		Err1 string `xml:"Err1"`
+	} `xml:"errors"`
 }
 
 type InterfaceResponse struct {
-	ErrCount int    `xml:"ErrCount"`
-	IP       string `xml:"IP"`
+	ErrCount int `xml:"ErrCount"`
 }
 
 func updateNamecheap(domain Domain) (string, error) {
@@ -121,18 +122,15 @@ func updateNamecheap(domain Domain) (string, error) {
 	}
 
 	decoder := xml.NewDecoder(nr)
-	decoder.CharsetReader = bypassReader
+	decoder.CharsetReader = func(encoding string, input io.Reader) (io.Reader, error) {
+		return input, nil
+	}
 	if err := decoder.Decode(&ncRes); err != nil {
 		return "", err
 	}
 
-	if ncRes.InterfaceResponse.ErrCount > 0 {
+	if ncRes.ErrCount > 0 {
 		return fmt.Sprintf("error in response: %s", string(body)), nil
-	}
-	if ncRes.InterfaceResponse.IP != ip {
-		return fmt.Sprintf("wrong IP in response want: %s, but got: %s",
-			ip,
-			ncRes.InterfaceResponse.IP), nil
 	}
 
 	return "", nil
