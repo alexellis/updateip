@@ -2,6 +2,7 @@ package main
 
 import (
 	b64 "encoding/base64"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -40,7 +41,7 @@ func runE(configFile string) error {
 	}
 
 	for _, domain := range config.Domains {
-		log.Printf("%v %v\n", domain, domain.PlainPassword())
+		log.Printf("Updating: %s\n", domain)
 
 		if domain.Provider != "namecheap" {
 			return fmt.Errorf("provider %s not yet supported", domain.Provider)
@@ -53,11 +54,20 @@ func runE(configFile string) error {
 			return err
 		}
 
-		log.Printf("%s result: %s", domain, res)
+		log.Printf("- %s result: %s", domain, res)
 
 	}
 
 	return nil
+}
+
+type NamecheapResponse struct {
+	InterfaceResponse InterfaceResponse `xml:"interface-response"`
+}
+
+type InterfaceResponse struct {
+	ErrCount int    `xml:"ErrCount"`
+	IP       string `xml:"IP"`
 }
 
 func updateNamecheap(domain Domain) (string, error) {
@@ -96,7 +106,21 @@ func updateNamecheap(domain Domain) (string, error) {
 		return "", fmt.Errorf("error getting %s: %s, error: %s", uri, res.Status, string(body))
 	}
 
-	return string(body), nil
+	ncRes := NamecheapResponse{}
+	if err := xml.Unmarshal(body, &ncRes); err != nil {
+		return "", fmt.Errorf("error unmarshalling %s: %s", uri, err)
+	}
+
+	if ncRes.InterfaceResponse.ErrCount > 0 {
+		return fmt.Sprintf("error in response: %s", string(body)), nil
+	}
+	if ncRes.InterfaceResponse.IP != ip {
+		return fmt.Sprintf("wrong IP in response want: %s, but got: %s",
+			ip,
+			ncRes.InterfaceResponse.IP), nil
+	}
+
+	return "", nil
 }
 
 func readConfig(configFile string) (Config, error) {

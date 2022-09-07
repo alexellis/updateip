@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-16"?>
+<interface-response>
+    <Command>SETDNSHOST</Command>
+    <Language>eng</Language>
+    <IP>212.228.34.31</IP>
+    <ErrCount>0</ErrCount>
+    <errors />
+    <ResponseCount>0</ResponseCount>
+    <responses />
+    <Done>true</Done>
+    <debug>
+        <![CDATA[]]>
+    </debug>
+</interface-response>
