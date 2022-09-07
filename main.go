@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	b64 "encoding/base64"
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -13,8 +15,13 @@ import (
 	"strings"
 
 	"github.com/alexellis/updateip/cmd"
+	"golang.org/x/net/html/charset"
 	"gopkg.in/yaml.v2"
 )
+
+func bypassReader(encoding string, input io.Reader) (io.Reader, error) {
+	return input, nil
+}
 
 func main() {
 	var configFile string
@@ -107,8 +114,16 @@ func updateNamecheap(domain Domain) (string, error) {
 	}
 
 	ncRes := NamecheapResponse{}
-	if err := xml.Unmarshal(body, &ncRes); err != nil {
-		return "", fmt.Errorf("error unmarshalling %s: %s", uri, err)
+
+	nr, err := charset.NewReader(bytes.NewBuffer(body), "utf-16")
+	if err != nil {
+		return "", err
+	}
+
+	decoder := xml.NewDecoder(nr)
+	decoder.CharsetReader = bypassReader
+	if err := decoder.Decode(&ncRes); err != nil {
+		return "", err
 	}
 
 	if ncRes.InterfaceResponse.ErrCount > 0 {
