@@ -44,7 +44,7 @@ func runE(configFile string) error {
 	}
 
 	for _, domain := range config.Domains {
-		log.Printf("Updating: %s\n", domain)
+		log.Printf("Updating: %s\n", domain.Domain)
 
 		if domain.Provider != "namecheap" {
 			return fmt.Errorf("provider %s not yet supported", domain.Provider)
@@ -56,9 +56,13 @@ func runE(configFile string) error {
 		if err != nil {
 			return err
 		}
+		if len(res) == 0 {
+			log.Printf("Updated: %s\n", domain.Domain)
+		} else {
+			log.Printf("Failed update: %s, error: %s\n", domain.Domain, res)
+		}
 
-		log.Printf("- %s result: %s", domain, res)
-
+		log.Printf("- %s result: %s", domain.Domain, res)
 	}
 
 	return nil
