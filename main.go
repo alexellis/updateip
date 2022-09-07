@@ -61,8 +61,6 @@ func runE(configFile string) error {
 		} else {
 			log.Printf("Failed update: %s, error: %s\n", domain.Domain, res)
 		}
-
-		log.Printf("- %s result: %s", domain.Domain, res)
 	}
 
 	return nil
